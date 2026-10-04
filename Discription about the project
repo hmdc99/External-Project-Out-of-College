@@ -1,0 +1,89 @@
+# PowerOfTwoMaxHeap
+
+A max heap in which every parent node has 2^`childExponent` children. The exponent is passed to the constructor. An exponent of 0 gives a chain, 1 gives a binary heap, 2 gives four children per node, and so on up to 30.
+
+Because the branching factor is a power of two, parent and child positions are computed with shifts instead of division:
+
+```
+parent(i)     = (i - 1) >>> childExponent
+firstChild(i) = i * 2^childExponent + 1
+```
+
+The heap is stored in a flat array with no per-node objects. `insert` and `popMax` move values through a hole instead of swapping them, so each element is written once per level.
+
+## Files
+
+| File | Description |
+|---|---|
+| `PowerOfTwoMaxHeap.java` | Java implementation, `int` values |
+| `PowerOfTwoMaxHeapTest.java` | Java tests and timing |
+| `PowerOfTwoMaxHeap.js` | JavaScript implementation, any non-NaN number |
+| `PowerOfTwoMaxHeap.test.js` | JavaScript tests and timing |
+
+## Usage
+
+### Java
+
+```java
+PowerOfTwoMaxHeap heap = new PowerOfTwoMaxHeap(2); // 4 children per node
+heap.insert(5);
+heap.insert(42);
+heap.insert(7);
+
+heap.peekMax(); // 42
+heap.popMax();  // 42
+heap.size();    // 2
+```
+
+An initial capacity can be passed as a second argument: `new PowerOfTwoMaxHeap(2, 1_000_000)`.
+
+### JavaScript
+
+```js
+const { PowerOfTwoMaxHeap } = require('./PowerOfTwoMaxHeap');
+
+const heap = new PowerOfTwoMaxHeap(2); // 4 children per node
+heap.insert(5);
+heap.insert(42);
+heap.insert(7);
+
+heap.peekMax(); // 42
+heap.popMax();  // 42
+heap.size;      // 2
+```
+
+## API
+
+| Operation | Java | JavaScript | Cost |
+|---|---|---|---|
+| Add a value | `insert(int)` | `insert(number)` | O(log<sub>d</sub> n) |
+| Remove and return the largest | `popMax()` | `popMax()` | O(d log<sub>d</sub> n) |
+| Return the largest | `peekMax()` | `peekMax()` | O(1) |
+| Number of values | `size()` | `size` | O(1) |
+| Whether the heap is empty | `isEmpty()` | `isEmpty` | O(1) |
+| Children per node | `branchingFactor()` | `branchingFactor` | O(1) |
+
+Here d = 2^`childExponent` and n is the number of values. A larger d makes the heap shallower, which speeds up `insert` and makes `popMax` scan more children per level.
+
+## Behavior and limits
+
+- `childExponent` must be an integer from 0 to 30. Anything else throws `IllegalArgumentException` (Java) or `RangeError` (JavaScript). The upper limit keeps 2^`childExponent` within a 32-bit int.
+- `popMax` and `peekMax` on an empty heap throw `NoSuchElementException` (Java) or `Error` (JavaScript).
+- The JavaScript version rejects `NaN` and non-number values with a `TypeError`.
+- Child indexes are computed in `long` (Java) or double (JavaScript) arithmetic. A 32-bit `i << childExponent` overflows at large exponents even for a small heap.
+- When 2^`childExponent` is larger than the number of values, the root has every other value as a child, so `popMax` is a linear scan.
+- With `childExponent = 0` every operation is O(n).
+- The backing array doubles when full and is capped just below the platform array limit. It does not shrink after pops.
+
+## Tests
+
+```
+# Java (JDK 11 or later)
+javac PowerOfTwoMaxHeap.java PowerOfTwoMaxHeapTest.java
+java PowerOfTwoMaxHeapTest
+
+# JavaScript (Node 18 or later)
+node PowerOfTwoMaxHeap.test.js
+```
+
+Both suites check every exponent from 0 to 30 against a reference implementation (`PriorityQueue` in Java, a sorted array in JavaScript). They use mixed insert and pop sequences, heavy duplicates, ascending and descending input, extreme values, invalid arguments, and empty-heap errors. Each also prints a rough timing for 2 million random values at several exponents.
